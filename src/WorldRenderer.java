@@ -4,7 +4,7 @@ import java.awt.event.*;
 
 public class WorldRenderer extends JPanel {
 
-    public static int worldRenderDistance = 1;
+    public static int worldRenderDistance = 2;
     public static int spriteSizeOffset = 16;
 
     ChunkGenerator worldChunkGenerator;
@@ -13,13 +13,15 @@ public class WorldRenderer extends JPanel {
 
     private boolean renderChunkBorder = true;
 
-
     long timeStamp;
     long deltaTime;
     int xPress, yPress;
     double cameraXLocation, cameraYLocation;
     double lastReleasedPositionY, lastReleasedPositionX;
 
+
+    private double zoomLevel = 1.0;
+    private static final double ZOOM_FACTOR = 0.1;
 
     public WorldRenderer(ChunkGenerator cgn) {
         worldChunkGenerator = cgn;
@@ -34,7 +36,6 @@ public class WorldRenderer extends JPanel {
         cameraYLocation = 350;
         lastReleasedPositionX = 350;
         lastReleasedPositionY = 350;
-
 
         this.addMouseListener(new MouseListener() {
             @Override
@@ -73,49 +74,52 @@ public class WorldRenderer extends JPanel {
             public void mouseMoved(MouseEvent e) {}
         });
 
+
+        this.addMouseWheelListener(new MouseWheelListener() {
+            @Override
+            public void mouseWheelMoved(MouseWheelEvent e) {
+                int notches = e.getWheelRotation();
+                if (notches < 0) {
+                    zoomLevel += ZOOM_FACTOR; // Zoom in
+                } else {
+                    zoomLevel = Math.max(zoomLevel - ZOOM_FACTOR, 0.1); // Zoom out, with a minimum level
+                }
+                repaint();
+            }
+        });
     }
 
     private void renderChunk(int posX, int posY, Graphics2D g2d) {
         Image[][] sprites = worldChunkGenerator.grabChunk(posX, posY).getRenderLayer();
 
-        if (posX%4==0 && posY%4==0) {
-            g2d.drawString(""+posX+", "+posY,
-                    256+(int) cameraXLocation +posX*spriteSizeOffset*ChunkGenerator.CHUNK_SIZE +ChunkGenerator.CHUNK_SIZE/2*spriteSizeOffset,
-                    256+(int) cameraYLocation +posY*spriteSizeOffset*ChunkGenerator.CHUNK_SIZE +ChunkGenerator.CHUNK_SIZE/2*spriteSizeOffset);
-        }
+        // Adjusting the rendering coordinates based on zoom level
+        int offsetX = (int) (256 + cameraXLocation + posX * spriteSizeOffset * ChunkGenerator.CHUNK_SIZE * zoomLevel);
+        int offsetY = (int) (256 + cameraYLocation + posY * spriteSizeOffset * ChunkGenerator.CHUNK_SIZE * zoomLevel);
 
-
-        for (int y=0; y<sprites.length; y++) {
-            for (int x=0; x<sprites.length; x++) {
-                g2d.scale(1, 1);
+        for (int y = 0; y < sprites.length; y++) {
+            for (int x = 0; x < sprites.length; x++) {
                 g2d.drawImage(sprites[y][x],
-                        256+(int) cameraXLocation +posX*spriteSizeOffset*ChunkGenerator.CHUNK_SIZE +x*spriteSizeOffset,
-                        256+(int) cameraYLocation +posY*spriteSizeOffset*ChunkGenerator.CHUNK_SIZE +y*spriteSizeOffset,
+                        (int) (offsetX + x * spriteSizeOffset * zoomLevel),
+                        (int) (offsetY + y * spriteSizeOffset * zoomLevel),
                         null);
-                //System.out.println("rendered sprite ("+x+","+y+") of Chunk(x="+posX+",y="+posY+")");
             }
         }
 
         g2d.setColor(Color.red);
         if (renderChunkBorder) {
-            g2d.drawRect(256+(int) cameraXLocation +posX*spriteSizeOffset*ChunkGenerator.CHUNK_SIZE,
-                    256+(int) cameraYLocation +posY*spriteSizeOffset*ChunkGenerator.CHUNK_SIZE,
-                    spriteSizeOffset*ChunkGenerator.CHUNK_SIZE,
-                    spriteSizeOffset*ChunkGenerator.CHUNK_SIZE);
+            g2d.drawRect(offsetX, offsetY,
+                    (int) (spriteSizeOffset * ChunkGenerator.CHUNK_SIZE * zoomLevel),
+                    (int) (spriteSizeOffset * ChunkGenerator.CHUNK_SIZE * zoomLevel));
         }
     }
 
-
-    //render all chunks surrounding the chunk (posX, posY), in a radius of chunkRadius
     public void renderALlChunksInRadiusOf(int posX, int posY, int chunkRadius, Graphics2D g2d) {
-
-        for (int y=(posY-(chunkRadius)); y<posY+(chunkRadius+1); y++) {
-            for (int x=(posX-(chunkRadius)); x<posX+(chunkRadius+1); x++) {
+        for (int y = (posY - chunkRadius); y < posY + (chunkRadius + 1); y++) {
+            for (int x = (posX - chunkRadius); x < posX + (chunkRadius + 1); x++) {
                 renderChunk(x, y, g2d);
             }
         }
     }
-
 
     @Override
     public void paintComponent(Graphics g) {
@@ -124,18 +128,8 @@ public class WorldRenderer extends JPanel {
         renderALlChunksInRadiusOf(chunkThatPlayerIsCurrentlyInX, chunkThatPlayerIsCurrentlyInY, worldRenderDistance, g2d);
         g2d.dispose();
 
-
-        chunkThatPlayerIsCurrentlyInX = -(int) (cameraXLocation / 256)  +(cameraXLocation<0?1:0);
-        chunkThatPlayerIsCurrentlyInY = -(int) (cameraYLocation / 256)  +(cameraYLocation<0?1:0);
-
-        System.out.println("\n\n\n\ncameraXLocation: "+cameraXLocation);
-        System.out.println("cameraYLocation: "+cameraYLocation);
-        System.out.println("worldRenderingXLocation: "+ chunkThatPlayerIsCurrentlyInX);
-        System.out.println("worldRenderingYLocation: "+ chunkThatPlayerIsCurrentlyInY);
-        worldChunkGenerator.listChunksThatExist();
-        System.out.println(worldChunkGenerator.allChunksList.size()+ " Chunks Currently loaded into mem");
+        chunkThatPlayerIsCurrentlyInX = -(int) (cameraXLocation / (256 * zoomLevel)) + (cameraXLocation < 0 ? 1 : 0);
+        chunkThatPlayerIsCurrentlyInY = -(int) (cameraYLocation / (256 * zoomLevel)) + (cameraYLocation < 0 ? 1 : 0);
 
     }
-
 }
-

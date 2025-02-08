@@ -8,11 +8,13 @@ public class ChunkGenerator {
 
     Map<Integer,Map<Integer,Chunk>> generatedChunksMap;
     ArrayList<Chunk> allChunksList;
+    NoiseGenerator perlin;
     public static int CHUNK_SIZE = 16;
 
     public ChunkGenerator(){
         generatedChunksMap = new HashMap<>();
         allChunksList = new ArrayList<>();
+        perlin = new NoiseGenerator();
     }
 
     public Chunk grabChunk(int atX, int atY) {
@@ -23,7 +25,7 @@ public class ChunkGenerator {
 
         Chunk foundChunk;
         if (xChunks.get(atX) == null) {
-            xChunks.put(atX, foundChunk=new Chunk(atX,atY));
+            xChunks.put(atX, foundChunk=new Chunk(atX,atY, perlin));
         } else foundChunk = xChunks.get(atX);
 
         if (!allChunksList.contains(foundChunk))

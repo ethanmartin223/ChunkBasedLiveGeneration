@@ -1,24 +1,37 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.image.BufferedImage;
 
 public class Chunk {
 
-    public static Image GROUND_IMAGE = new ImageIcon("assets/Ground.png").getImage();
+    public static Image WATER_IMAGE = new ImageIcon("buildAssets/0.png").getImage();
+    public static Image GRASS_IMAGE = new ImageIcon("buildAssets/1.png").getImage();
+    public static Image SAND_IMAGE = new ImageIcon("buildAssets/2.png").getImage();
+    public static Image STONE_IMAGE = new ImageIcon("buildAssets/3.png").getImage();
 
     public int xWorldLocation;
     public int yWorldLocation;
 
-    private int[][] dataLayer;
+    private double[][] dataLayer;
     private Image[][] renderLayer;
 
-    public Chunk(int x, int y) {
-        dataLayer = new int[ChunkGenerator.CHUNK_SIZE][ChunkGenerator.CHUNK_SIZE];
+    NoiseGenerator perlin;
+
+    public Chunk(int x, int y, NoiseGenerator perlin) {
+        dataLayer = new double[ChunkGenerator.CHUNK_SIZE][ChunkGenerator.CHUNK_SIZE];
         renderLayer = new Image[ChunkGenerator.CHUNK_SIZE][ChunkGenerator.CHUNK_SIZE];
         xWorldLocation = x;
         yWorldLocation = y;
+        this.perlin = perlin;
+        generateDataLayer();
+    }
 
-        if (x%4!=0 || y%4!=0) randomizeDataLayer();
+    public void generateDataLayer() {
+        for (int y=0; y<dataLayer.length; y++) {
+            for (int x = 0; x < dataLayer.length; x++) {
+                dataLayer[y][x] =  perlin.noise((double) (xWorldLocation * ChunkGenerator.CHUNK_SIZE + x),
+                        (double) (yWorldLocation * ChunkGenerator.CHUNK_SIZE + y));
+            }
+        }
     }
 
     public void randomizeDataLayer() {
@@ -34,16 +47,17 @@ public class Chunk {
         return "Chunk(x="+xWorldLocation+",y="+yWorldLocation+")";
     }
 
-    public int[][] getDataLayer() {
+    public double[][] getDataLayer() {
         return dataLayer;
     }
 
     private void updateSpritesInRenderLayer() {
         for (int y=0; y<dataLayer.length; y++) {
             for (int x = 0; x < dataLayer.length; x++) {
-                if (dataLayer[y][x] == 1) {
-                    renderLayer[y][x] = GROUND_IMAGE;
-                } else renderLayer[y][x] = null;
+                if (dataLayer[y][x] < 1) renderLayer[y][x] = STONE_IMAGE;
+                if (dataLayer[y][x] < .5) renderLayer[y][x] = GRASS_IMAGE;
+                if (dataLayer[y][x] < .09) renderLayer[y][x] = SAND_IMAGE;
+                if (dataLayer[y][x] < .005) renderLayer[y][x] = WATER_IMAGE;
             }
         }
     }
