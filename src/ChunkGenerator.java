@@ -6,15 +6,20 @@ import java.util.Map;
 
 public class ChunkGenerator {
 
+    public Chunk spawnChunk;
+    public boolean firstChunkSpawned;
+
     Map<Integer,Map<Integer,Chunk>> generatedChunksMap;
     ArrayList<Chunk> allChunksList;
-    NoiseGenerator perlin;
+
     public static int CHUNK_SIZE = 16;
+    public static int DUMMY_CHUNK_CHANCE_PERCENT = 0;
+    public static int CROSS_CHUNK_BRANCHING_CHANCE_PERCENT = 50;
 
     public ChunkGenerator(){
         generatedChunksMap = new HashMap<>();
         allChunksList = new ArrayList<>();
-        perlin = new NoiseGenerator();
+        firstChunkSpawned = false;
     }
 
     public Chunk grabChunk(int atX, int atY) {
@@ -25,13 +30,24 @@ public class ChunkGenerator {
 
         Chunk foundChunk;
         if (xChunks.get(atX) == null) {
-            xChunks.put(atX, foundChunk=new Chunk(atX,atY, perlin));
+            xChunks.put(atX, foundChunk=new Chunk(atX,atY, this));
         } else foundChunk = xChunks.get(atX);
 
         if (!allChunksList.contains(foundChunk))
             allChunksList.add(foundChunk);
 
+        //make spawn chunk if it's the first chunk and not already set
+        if (!firstChunkSpawned) {
+            firstChunkSpawned = true;
+            spawnChunk = foundChunk;
+            System.out.println("Spawn Chunk Set: " + spawnChunk);
+        }
+
         return foundChunk;
+    }
+
+    public boolean hasChunkBeenGeneratedAt(int atX, int atY) {
+        return generatedChunksMap.containsKey(atY) && generatedChunksMap.get(atY).containsKey(atX);
     }
 
     public void listChunksThatExist() {

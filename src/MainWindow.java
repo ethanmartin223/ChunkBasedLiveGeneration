@@ -19,11 +19,12 @@ public class MainWindow extends JFrame {
     public static void main(String[] args) {
         MainWindow window = new MainWindow();
 
-
         ChunkGenerator cgn = new ChunkGenerator();
         WorldRenderer renderer = new WorldRenderer(cgn);
         window.add(renderer);
 
+        window.setSize(1000, 1001);
+        window.setSize(1000, 1000);
 
 
     }

@@ -11,7 +11,7 @@ public class WorldRenderer extends JPanel {
     int chunkThatPlayerIsCurrentlyInX;
     int chunkThatPlayerIsCurrentlyInY;
 
-    private boolean renderChunkBorder = true;
+    private final boolean renderChunkBorder = false;
 
     long timeStamp;
     long deltaTime;
@@ -20,8 +20,8 @@ public class WorldRenderer extends JPanel {
     double lastReleasedPositionY, lastReleasedPositionX;
 
 
-    private double zoomLevel = 1.0;
-    private static final double ZOOM_FACTOR = 0.1;
+    private int zoomLevel = 1;
+    private static final int ZOOM_FACTOR = 1;
 
     public WorldRenderer(ChunkGenerator cgn) {
         worldChunkGenerator = cgn;
@@ -80,27 +80,33 @@ public class WorldRenderer extends JPanel {
             public void mouseWheelMoved(MouseWheelEvent e) {
                 int notches = e.getWheelRotation();
                 if (notches < 0) {
-                    zoomLevel += ZOOM_FACTOR; // Zoom in
+                    zoomLevel += ZOOM_FACTOR;
                 } else {
-                    zoomLevel = Math.max(zoomLevel - ZOOM_FACTOR, 0.1); // Zoom out, with a minimum level
+                    zoomLevel = Math.max(zoomLevel - ZOOM_FACTOR, 1);
                 }
                 repaint();
             }
         });
+
     }
 
     private void renderChunk(int posX, int posY, Graphics2D g2d) {
         Image[][] sprites = worldChunkGenerator.grabChunk(posX, posY).getRenderLayer();
 
-        // Adjusting the rendering coordinates based on zoom level
         int offsetX = (int) (256 + cameraXLocation + posX * spriteSizeOffset * ChunkGenerator.CHUNK_SIZE * zoomLevel);
         int offsetY = (int) (256 + cameraYLocation + posY * spriteSizeOffset * ChunkGenerator.CHUNK_SIZE * zoomLevel);
 
         for (int y = 0; y < sprites.length; y++) {
-            for (int x = 0; x < sprites.length; x++) {
+            for (int x = 0; x < sprites[y].length; x++) {
+                int scaledWidth = spriteSizeOffset * zoomLevel;
+                int scaledHeight = spriteSizeOffset * zoomLevel;
+
+
                 g2d.drawImage(sprites[y][x],
-                        (int) (offsetX + x * spriteSizeOffset * zoomLevel),
-                        (int) (offsetY + y * spriteSizeOffset * zoomLevel),
+                        (int) (offsetX + x * scaledWidth),
+                        (int) (offsetY + y * scaledHeight),
+                        scaledWidth,
+                        scaledHeight,
                         null);
             }
         }
@@ -110,6 +116,9 @@ public class WorldRenderer extends JPanel {
             g2d.drawRect(offsetX, offsetY,
                     (int) (spriteSizeOffset * ChunkGenerator.CHUNK_SIZE * zoomLevel),
                     (int) (spriteSizeOffset * ChunkGenerator.CHUNK_SIZE * zoomLevel));
+            g2d.drawString("(" + posX + ", " + posY + ")",
+                    offsetX,
+                    offsetY - 10);
         }
     }
 
